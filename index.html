@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Auto Cat Stream</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #1a1a1a; }
+        canvas { display: block; }
+        #ui {
+            position: absolute; top: 10px; left: 10px; color: white;
+            font-family: Arial, sans-serif; font-size: 18px;
+            background: rgba(0,0,0,0.6); padding: 10px 15px; border-radius: 8px;
+        }
+    </style>
+    <!-- Three.js Library Import -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+
+    <div id="ui">🐾 Cat Status: <span id="status">Wandering...</span></div>
+
+    <script>
+        // ১. ৩ডি সিন ও ক্যামেরা সেটআপ
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xf0f0f0);
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 5, 10);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // লাইটিং (আলো)
+        const light = new THREE.DirectionalLight(0xffffff, 1);
+        light.position.set(5, 10, 7.5);
+        scene.add(light);
+        scene.add(new THREE.AmbientLight(0x404040, 1.5));
+
+        // মাউস দিয়ে ক্যামেরা ঘোরানোর অপশন
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+        // ২. ঘরের মেঝে তৈরি
+        const floorGeometry = new THREE.PlaneGeometry(20, 20);
+        const floorMaterial = new THREE.MeshStandardMaterial({ color: 0x88c1a2 });
+        const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+        floor.rotation.x = -Math.PI / 2;
+        scene.add(floor);
+
+        // ৩. সিমুলেটেড ৩ডি বিড়াল (বিড়ালেরPlaceholder প্রোটোটাইপ)
+        const catGroup = new THREE.Group();
+        const catBodyMat = new THREE.MeshStandardMaterial({ color: 0xff9900 });
+        
+        // বিড়ালের শরীর
+        const body = new THREE.Mesh(new THREE.BoxGeometry(1, 0.6, 1.5), catBodyMat);
+        body.position.y = 0.5;
+        catGroup.add(body);
+
+        // বিড়ালের মাথা
+        const head = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.6, 0.7), catBodyMat);
+        head.position.set(0, 0.9, 0.8);
+        catGroup.add(head);
+
+        scene.add(catGroup);
+
+        // ৪. অটো-মুভমেন্ট ও এআই লুপ
+        let targetPos = new THREE.Vector3(0, 0, 0);
+        let speed = 0.03;
+        const statusText = document.getElementById("status");
+
+        function getNewRandomPosition() {
+            targetPos.x = (Math.random() - 0.5) * 16;
+            targetPos.z = (Math.random() - 0.5) * 16;
+            
+            const actions = ["Running & Jumping 🐾", "Looking for Food 🐟", "Walking in Room 🐈", "Sleeping... 💤"];
+            statusText.innerText = actions[Math.floor(Math.random() * actions.length)];
+        }
+
+        getNewRandomPosition();
+        setInterval(getNewRandomPosition, 4000); // প্রতি ৪ সেকেন্ড পর পর নতুন জায়গায় যাবে
+
+        // ৫. অ্যানিমেশন ফ্রেম লুপ
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // বিড়ালকে টার্গেট পজিশনের দিকে নিয়ে যাওয়া
+            if (catGroup.position.distanceTo(targetPos) > 0.2) {
+                catGroup.lookAt(targetPos.x, catGroup.position.y, targetPos.z);
+                catGroup.translateZ(speed);
+                
+                // বাউন্স / লাফানোর অ্যানিমেশন
+                catGroup.position.y = Math.abs(Math.sin(Date.now() * 0.008)) * 0.3;
+            } else {
+                catGroup.position.y = 0;
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        // স্ক্রিন রিসাইজ সাপোর্ট
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
